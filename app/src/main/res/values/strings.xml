@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">Meu IFBA</string>
+
+    <!-- Telas -->
+    <string name="splash_loading">Carregando…</string>
+    <string name="login_title">Entrar</string>
+    <string name="cadastro_title">Cadastrar</string>
+    <string name="home_title">Eventos</string>
+    <string name="notificacoes_title">Notificações</string>
+    <string name="cronograma_title">Meu Cronograma</string>
+    <string name="perfil_title">Perfil</string>
+
+    <!-- Botões -->
+    <string name="btn_entrar">Entrar</string>
+    <string name="btn_cadastrar">Cadastrar</string>
+    <string name="btn_continuar_visitante">Continuar como visitante</string>
+    <string name="btn_recuperar_senha">Recuperar Senha</string>
+    <string name="btn_salvar">Salvar</string>
+    <string name="btn_cancelar">Cancelar</string>
+    <string name="btn_confirmar">Confirmar</string>
+    <string name="btn_voltar">Voltar</string>
+    <string name="btn_publicar">Publicar</string>
+    <string name="btn_criar_evento">Criar Evento</string>
+    <string name="btn_marcar_participacao">Marcar Participação</string>
+
+    <!-- Labels -->
+    <string name="label_email">E-mail institucional</string>
+    <string name="label_senha">Senha</string>
+    <string name="label_nome">Nome completo</string>
+    <string name="label_curso">Curso</string>
+    <string name="label_confirmar_senha">Confirmar senha</string>
+
+    <!-- Mensagens -->
+    <string name="msg_campo_obrigatorio">Campo obrigatório</string>
+    <string name="msg_email_invalido">E-mail inválido</string>
+    <string name="msg_senha_fraca">Senha muito fraca</string>
+    <string name="msg_login_sucesso">Login realizado com sucesso</string>
+    <string name="msg_erro_generico">Ocorreu um erro. Tente novamente.</string>
+    <string name="msg_sem_conexao">Sem conexão com a internet</string>
+    <string name="msg_nenhum_evento">Nenhum evento encontrado</string>
+
+    <!-- Categorias -->
+    <string name="categoria_palestra">Palestra</string>
+    <string name="categoria_workshop">Workshop</string>
+    <string name="categoria_seminario">Seminário</string>
+    <string name="categoria_competicao">Competição</string>
+    <string name="categoria_hackathon">Hackathon</string>
+    <string name="categoria_feira">Feira Científica</string>
+    <string name="categoria_visita">Visita Técnica</string>
+    <string name="categoria_defesa">Defesa de TCC</string>
+    <string name="categoria_reuniao">Reunião Estudantil</string>
+</resources>
