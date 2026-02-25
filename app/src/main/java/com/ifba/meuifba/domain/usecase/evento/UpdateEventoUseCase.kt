@@ -1,14 +1,14 @@
 package com.ifba.meuifba.domain.usecase.evento
 
+import com.ifba.meuifba.data.remote.dto.UpdateEventoRequest
+import com.ifba.meuifba.data.repository.EventoRepository
 import com.ifba.meuifba.domain.model.EventoModel
 import com.ifba.meuifba.utils.Resource
-import com.ifba.meuifba.utils.ValidationUtils
 import javax.inject.Inject
 
 class UpdateEventoUseCase @Inject constructor(
-    // private val eventoRepository: EventoRepository
+    private val eventoRepository: EventoRepository
 ) {
-
     suspend operator fun invoke(
         eventoId: Long,
         titulo: String,
@@ -23,11 +23,21 @@ class UpdateEventoUseCase @Inject constructor(
         certificacao: Boolean,
         requisitos: String?,
         numeroVagas: Int
-    ): Resource<EventoModel> {
-        TODO("Implementar quando EventoRepository estiver pronto")
+    ): Resource<EventoModel?> {
+        val request = UpdateEventoRequest(
+            titulo = titulo,
+            descricao = descricao,
+            categoriaId = categoriaId,
+            dataEvento = dataEvento,
+            horarioInicio = horarioInicio,
+            horarioFim = horarioFim,
+            local = local,
+            publicoAlvo = publicoAlvo,
+            cargaHoraria = cargaHoraria,
+            certificacao = certificacao,
+            requisitos = requisitos,
+            numeroVagas = numeroVagas
+        )
+        return eventoRepository.updateEvento(eventoId, request)
     }
-
-    /*
-    // Implementação futura com validações
-    */
 }

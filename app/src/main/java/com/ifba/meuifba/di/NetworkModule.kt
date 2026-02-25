@@ -2,6 +2,9 @@ package com.ifba.meuifba.di
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.ifba.meuifba.data.remote.api.EventoApi
+import com.ifba.meuifba.data.remote.api.NotificacaoApi
+import com.ifba.meuifba.data.remote.api.UsuarioApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -62,11 +65,23 @@ object NetworkModule {
             .build()
     }
 
-    // APIs serão fornecidas aqui depois
-    // Exemplo:
-    // @Provides
-    // @Singleton
-    // fun provideEventoApi(retrofit: Retrofit): EventoApi {
-    //     return retrofit.create(EventoApi::class.java)
-    // }
+    // ========== APIs ==========
+
+    @Provides
+    @Singleton
+    fun provideEventoApi(retrofit: Retrofit): EventoApi {
+        return retrofit.create(EventoApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUsuarioApi(retrofit: Retrofit): UsuarioApi {
+        return retrofit.create(UsuarioApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificacaoApi(retrofit: Retrofit): NotificacaoApi {
+        return retrofit.create(NotificacaoApi::class.java)
+    }
 }
