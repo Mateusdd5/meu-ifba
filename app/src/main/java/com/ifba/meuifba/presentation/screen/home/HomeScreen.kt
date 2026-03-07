@@ -29,11 +29,11 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToNotificacoes: () -> Unit,
     onNavigateToMeusEventos: () -> Unit,
+    onNavigateToCreateEvento: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
     var showSearchBar by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -46,7 +46,6 @@ fun HomeScreen(
                 },
                 actions = {
                     if (showSearchBar) {
-                        // Barra de busca expandida
                         TextField(
                             value = searchQuery,
                             onValueChange = viewModel::searchEventos,
@@ -71,7 +70,6 @@ fun HomeScreen(
                             }
                         )
                     } else {
-                        // Ícones normais
                         IconButton(onClick = { showSearchBar = true }) {
                             Icon(Icons.Default.Search, "Buscar")
                         }
@@ -86,11 +84,7 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            // FAB para criar evento (apenas organizadores)
-            // TODO: Verificar se usuário é organizador
-            FloatingActionButton(
-                onClick = { /* TODO: Navegar para CreateEventoScreen */ }
-            ) {
+            FloatingActionButton(onClick = onNavigateToCreateEvento) {
                 Icon(Icons.Default.Add, "Criar evento")
             }
         }
@@ -101,111 +95,55 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) {
             when (val state = uiState) {
-                is HomeUiState.Loading -> {
-                    LoadingState()
-                }
-                is HomeUiState.Empty -> {
-                    EmptyState(
-                        onRefresh = viewModel::loadEventos
-                    )
-                }
-                is HomeUiState.Success -> {
-                    EventosList(
-                        eventos = state.eventos,
-                        onEventoClick = onNavigateToEventoDetail,
-                        onMarcacaoToggle = viewModel::toggleMarcacao
-                    )
-                }
-                is HomeUiState.Error -> {
-                    ErrorState(
-                        message = state.message,
-                        onRetry = viewModel::loadEventos
-                    )
-                }
+                is HomeUiState.Loading -> LoadingState()
+                is HomeUiState.Empty -> EmptyState(onRefresh = viewModel::loadEventos)
+                is HomeUiState.Success -> EventosList(
+                    eventos = state.eventos,
+                    onEventoClick = onNavigateToEventoDetail,
+                    onMarcacaoToggle = viewModel::toggleMarcacao
+                )
+                is HomeUiState.Error -> ErrorState(
+                    message = state.message,
+                    onRetry = viewModel::loadEventos
+                )
             }
         }
     }
 }
 
-// ========== COMPONENTES AUXILIARES ==========
-
 @Composable
 private fun LoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }
 
 @Composable
 private fun EmptyState(onRefresh: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(32.dp)
         ) {
-            Text(
-                text = "📅",
-                fontSize = 64.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Text(
-                text = "Nenhum evento encontrado",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Text(
-                text = "Não há eventos disponíveis no momento",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-            Button(onClick = onRefresh) {
-                Text("Atualizar")
-            }
+            Text(text = "📅", fontSize = 64.sp, modifier = Modifier.padding(bottom = 16.dp))
+            Text(text = "Nenhum evento encontrado", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            Text(text = "Não há eventos disponíveis no momento", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 24.dp))
+            Button(onClick = onRefresh) { Text("Atualizar") }
         }
     }
 }
 
 @Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+private fun ErrorState(message: String, onRetry: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(32.dp)
         ) {
-            Text(
-                text = "⚠️",
-                fontSize = 64.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Text(
-                text = "Erro ao carregar eventos",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Text(
-                text = message,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-            Button(onClick = onRetry) {
-                Text("Tentar novamente")
-            }
+            Text(text = "⚠️", fontSize = 64.sp, modifier = Modifier.padding(bottom = 16.dp))
+            Text(text = "Erro ao carregar eventos", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            Text(text = message, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 24.dp))
+            Button(onClick = onRetry) { Text("Tentar novamente") }
         }
     }
 }
@@ -238,21 +176,15 @@ private fun EventoCard(
     onMarcacaoToggle: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header com categoria e botão marcar
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Badge da categoria
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -265,127 +197,29 @@ private fun EventoCard(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-
-                // Botão marcar interesse
                 IconButton(onClick = onMarcacaoToggle) {
                     Icon(
-                        imageVector = if (evento.isMarcado)
-                            Icons.Default.Bookmark
-                        else
-                            Icons.Default.BookmarkBorder,
-                        contentDescription = if (evento.isMarcado)
-                            "Desmarcar"
-                        else
-                            "Marcar interesse",
-                        tint = if (evento.isMarcado)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                        imageVector = if (evento.isMarcado) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Marcar interesse",
+                        tint = if (evento.isMarcado) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Título
-            Text(
-                text = evento.titulo,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Descrição
-            Text(
-                text = evento.descricao,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Informações (data, hora, local)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Data
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = evento.dataFormatada,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Horário
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = evento.horarioInicio,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
+            Text(text = evento.titulo, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = evento.descricao, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Local
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = evento.local,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Text(text = "${evento.dataFormatada} • ${evento.horarioInicio}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
-            // Vagas (se tiver)
-            if (evento.numeroVagas > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                LinearProgressIndicator(
-                    progress = { (evento.numeroVagas - evento.vagasDisponiveis).toFloat() / evento.numeroVagas },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "${evento.vagasDisponiveis} vagas disponíveis de ${evento.numeroVagas}",
-                    fontSize = 12.sp,
-                    color = if (evento.isLotado)
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = evento.local, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

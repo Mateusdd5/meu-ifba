@@ -26,15 +26,12 @@ class CreateEventoViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Se está editando (tem eventoId) ou criando novo (null)
     private val eventoId: Long? = savedStateHandle.get<Long>("eventoId")
     private val isEditMode: Boolean = eventoId != null
 
-    // Estado da UI
     private val _uiState = MutableStateFlow<CreateEventoUiState>(CreateEventoUiState.Idle)
     val uiState: StateFlow<CreateEventoUiState> = _uiState.asStateFlow()
 
-    // Campos do formulário
     private val _titulo = MutableStateFlow("")
     val titulo: StateFlow<String> = _titulo.asStateFlow()
 
@@ -71,24 +68,34 @@ class CreateEventoViewModel @Inject constructor(
     private val _categoriaSelecionada = MutableStateFlow<CategoriaModel?>(null)
     val categoriaSelecionada: StateFlow<CategoriaModel?> = _categoriaSelecionada.asStateFlow()
 
-    // ID do usuário logado
+    private val _categorias = MutableStateFlow<List<CategoriaModel>>(emptyList())
+    val categorias: StateFlow<List<CategoriaModel>> = _categorias.asStateFlow()
+
     private val usuarioId: Long
         get() = preferencesManager.userId
 
     init {
+        loadCategorias()
         if (isEditMode && eventoId != null) {
             loadEvento(eventoId)
         }
     }
 
-    // Carregar evento para edição
+    private fun loadCategorias() {
+        _categorias.value = listOf(
+            CategoriaModel(id = 1, nome = "Workshop", descricao = "Atividades práticas", icone = "🛠️", cor = "#FF9800"),
+            CategoriaModel(id = 2, nome = "Palestra", descricao = "Apresentações e talks", icone = "🎤", cor = "#2196F3"),
+            CategoriaModel(id = 3, nome = "Seminário", descricao = "Discussões acadêmicas", icone = "📚", cor = "#9C27B0"),
+            CategoriaModel(id = 4, nome = "Competição", descricao = "Eventos competitivos", icone = "🏆", cor = "#F44336"),
+            CategoriaModel(id = 5, nome = "Hackathon", descricao = "Maratonas de programação", icone = "💻", cor = "#4CAF50")
+        )
+    }
+
     private fun loadEvento(id: Long) {
         viewModelScope.launch {
             _uiState.value = CreateEventoUiState.Loading
-
             val evento = getEventoByIdUseCase(id)
             if (evento != null) {
-                // Preencher campos com dados do evento
                 _titulo.value = evento.titulo
                 _descricao.value = evento.descricao
                 _local.value = evento.local
@@ -101,7 +108,6 @@ class CreateEventoViewModel @Inject constructor(
                 _requisitos.value = evento.requisitos ?: ""
                 _certificacao.value = evento.certificacao
                 _categoriaSelecionada.value = evento.categoria
-
                 _uiState.value = CreateEventoUiState.Idle
             } else {
                 _uiState.value = CreateEventoUiState.Error("Evento não encontrado")
@@ -109,7 +115,6 @@ class CreateEventoViewModel @Inject constructor(
         }
     }
 
-    // Funções para atualizar campos
     fun onTituloChange(value: String) { _titulo.value = value }
     fun onDescricaoChange(value: String) { _descricao.value = value }
     fun onLocalChange(value: String) { _local.value = value }
@@ -121,28 +126,21 @@ class CreateEventoViewModel @Inject constructor(
     fun onNumeroVagasChange(value: String) { _numeroVagas.value = value }
     fun onRequisitosChange(value: String) { _requisitos.value = value }
     fun onCertificacaoChange(value: Boolean) { _certificacao.value = value }
-    fun onCategoriaSelected(categoria: CategoriaModel) {
-        _categoriaSelecionada.value = categoria
-    }
+    fun onCategoriaChange(categoria: CategoriaModel) { _categoriaSelecionada.value = categoria }
 
-    // Salvar evento (criar ou atualizar)
     fun saveEvento() {
-        // Validações
         if (_titulo.value.isBlank()) {
             _uiState.value = CreateEventoUiState.Error("Título não pode estar vazio")
             return
         }
-
         if (_descricao.value.isBlank()) {
             _uiState.value = CreateEventoUiState.Error("Descrição não pode estar vazia")
             return
         }
-
         if (_dataEvento.value == null) {
             _uiState.value = CreateEventoUiState.Error("Selecione uma data")
             return
         }
-
         if (_categoriaSelecionada.value == null) {
             _uiState.value = CreateEventoUiState.Error("Selecione uma categoria")
             return
@@ -155,7 +153,6 @@ class CreateEventoViewModel @Inject constructor(
             _uiState.value = CreateEventoUiState.Loading
 
             val result = if (isEditMode && eventoId != null) {
-                // Atualizar evento existente
                 updateEventoUseCase(
                     eventoId = eventoId,
                     titulo = _titulo.value,
@@ -172,7 +169,6 @@ class CreateEventoViewModel @Inject constructor(
                     numeroVagas = numeroVagasInt
                 )
             } else {
-                // Criar novo evento
                 createEventoUseCase(
                     titulo = _titulo.value,
                     descricao = _descricao.value,
@@ -191,19 +187,14 @@ class CreateEventoViewModel @Inject constructor(
             }
 
             _uiState.value = when (result) {
-                is Resource.Success -> {
-                    result.data?.let { CreateEventoUiState.Success(it) }
-                        ?: CreateEventoUiState.Error("Erro ao salvar evento")
-                }
-                is Resource.Error -> CreateEventoUiState.Error(
-                    result.message ?: "Erro ao salvar evento"
-                )
+                is Resource.Success -> result.data?.let { CreateEventoUiState.Success(it) }
+                    ?: CreateEventoUiState.Error("Erro ao salvar evento")
+                is Resource.Error -> CreateEventoUiState.Error(result.message ?: "Erro ao salvar evento")
                 is Resource.Loading -> CreateEventoUiState.Loading
             }
         }
     }
 
-    // Limpar erro
     fun clearError() {
         if (_uiState.value is CreateEventoUiState.Error) {
             _uiState.value = CreateEventoUiState.Idle
@@ -211,7 +202,6 @@ class CreateEventoViewModel @Inject constructor(
     }
 }
 
-// Estados possíveis da tela de criar/editar evento
 sealed class CreateEventoUiState {
     object Idle : CreateEventoUiState()
     object Loading : CreateEventoUiState()

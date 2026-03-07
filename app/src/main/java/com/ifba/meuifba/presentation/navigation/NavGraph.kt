@@ -11,17 +11,17 @@ import com.ifba.meuifba.presentation.screen.auth.LoginScreen
 import com.ifba.meuifba.presentation.screen.auth.RegisterScreen
 import com.ifba.meuifba.presentation.screen.home.HomeScreen
 import com.ifba.meuifba.presentation.screen.evento.EventoDetailScreen
+import com.ifba.meuifba.presentation.screen.evento.CreateEventoScreen
+import com.ifba.meuifba.presentation.screen.profile.ProfileScreen
+import com.ifba.meuifba.presentation.screen.notificacoes.NotificacoesScreen
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
     startDestination: String = Screen.Splash.route
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = startDestination
-    ) {
-        // ========== SPLASH ==========
+    NavHost(navController = navController, startDestination = startDestination) {
+
         composable(route = Screen.Splash.route) {
             SplashScreen(
                 onNavigateToLogin = {
@@ -37,12 +37,9 @@ fun NavGraph(
             )
         }
 
-        // ========== AUTH ==========
         composable(route = Screen.Login.route) {
             LoginScreen(
-                onNavigateToRegister = {
-                    navController.navigate(Screen.Register.route)
-                },
+                onNavigateToRegister = { navController.navigate(Screen.Register.route) },
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
@@ -51,8 +48,7 @@ fun NavGraph(
             )
         }
 
-        // RegisterScreen
-         composable(route = Screen.Register.route) {
+        composable(route = Screen.Register.route) {
             RegisterScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToHome = {
@@ -60,46 +56,50 @@ fun NavGraph(
                         popUpTo(Screen.Register.route) { inclusive = true }
                     }
                 }
-             )
-         }
+            )
+        }
 
-        // ========== HOME ==========
         composable(route = Screen.Home.route) {
             HomeScreen(
                 onNavigateToEventoDetail = { eventoId ->
                     navController.navigate(Screen.EventoDetail.createRoute(eventoId))
                 },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route)
-                },
-                onNavigateToNotificacoes = {
-                    navController.navigate(Screen.Notificacoes.route)
-                },
-                onNavigateToMeusEventos = {
-                    navController.navigate(Screen.MeusEventos.route)
-                }
+                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                onNavigateToNotificacoes = { navController.navigate(Screen.Notificacoes.route) },
+                onNavigateToMeusEventos = { navController.navigate(Screen.MeusEventos.route) },
+                onNavigateToCreateEvento = { navController.navigate(Screen.CreateEvento.route) }
             )
         }
 
-        // ========== EVENTO DETAIL ==========
         composable(
             route = Screen.EventoDetail.route,
-            arguments = listOf(
-                navArgument("eventoId") {
-                    type = NavType.LongType
-                }
-            )
+            arguments = listOf(navArgument("eventoId") { type = NavType.LongType })
         ) {
             EventoDetailScreen(
-                onNavigateBack = {
-                    navController.navigateUp()
-                },
+                onNavigateBack = { navController.navigateUp() },
                 onNavigateToEdit = { eventoId ->
                     navController.navigate(Screen.EditEvento.createRoute(eventoId))
                 }
             )
         }
 
-        // TODO: Adicionar outras telas conforme forem sendo criadas
+        composable(route = Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable(route = Screen.Notificacoes.route) {
+            NotificacoesScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable(route = Screen.CreateEvento.route) {
+            CreateEventoScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onEventoCriado = { navController.navigateUp() }
+            )
+        }
     }
 }
