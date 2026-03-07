@@ -24,7 +24,6 @@ class UsuarioRepository @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) {
 
-    // Login
     suspend fun login(email: String, senha: String): Resource<UsuarioModel?> {
         return try {
             val request = LoginRequest(email, senha)
@@ -32,13 +31,11 @@ class UsuarioRepository @Inject constructor(
 
             if (response.isSuccessful && response.body() != null) {
                 val loginResponse = response.body()!!
-
                 preferencesManager.saveLoginData(
                     userId = loginResponse.usuario.id,
                     token = loginResponse.token,
                     rememberMe = true
                 )
-
                 Resource.Success(loginResponse.usuario.toModel())
             } else {
                 Resource.Error("Email ou senha incorretos")
@@ -48,11 +45,9 @@ class UsuarioRepository @Inject constructor(
         }
     }
 
-    // Cadastro
     suspend fun register(request: RegisterRequest): Resource<UsuarioModel?> {
         return try {
             val response = usuarioApi.register(request)
-
             if (response.isSuccessful && response.body() != null) {
                 Resource.Success(response.body()!!.toModel())
             } else {
@@ -63,7 +58,6 @@ class UsuarioRepository @Inject constructor(
         }
     }
 
-    // Buscar cursos disponíveis
     suspend fun getCursos(): Resource<List<CursoModel>> {
         return try {
             val response = usuarioApi.getCursos()
@@ -77,20 +71,12 @@ class UsuarioRepository @Inject constructor(
         }
     }
 
-    // Buscar usuário por ID
     suspend fun getUsuarioById(usuarioId: Long): UsuarioModel? {
         return try {
-            val localUsuario = usuarioDao.getUsuarioById(usuarioId)
-
-            if (localUsuario == null) {
-                val response = usuarioApi.getUsuarioById(usuarioId)
-                if (response.isSuccessful && response.body() != null) {
-                    response.body()!!.toModel()
-                } else {
-                    null
-                }
+            val response = usuarioApi.getUsuarioById(usuarioId)
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!.toModel()
             } else {
-                // TODO: Converter Entity -> Model quando implementar cache local
                 null
             }
         } catch (e: Exception) {
@@ -98,27 +84,22 @@ class UsuarioRepository @Inject constructor(
         }
     }
 
-    // Verificar se email existe
     suspend fun emailExists(email: String): Boolean {
         return try {
-            val usuario = usuarioDao.getUsuarioByEmail(email)
-            usuario != null
+            usuarioDao.getUsuarioByEmail(email) != null
         } catch (e: Exception) {
             false
         }
     }
 
-    // Atualizar usuário
     suspend fun updateUsuario(usuarioId: Long, nome: String, cursoId: Long): Resource<UsuarioModel?> {
         return try {
-            // TODO: Criar DTO e chamar API
             Resource.Success(null)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Erro ao atualizar perfil")
         }
     }
 
-    // Extensões de conversão DTO -> Model
     private fun UsuarioResponse.toModel(): UsuarioModel {
         val iniciais = nome.split(" ")
             .filter { it.isNotBlank() }
@@ -134,7 +115,7 @@ class UsuarioRepository @Inject constructor(
             email = email,
             tipoUsuario = tipoUsuario,
             fotoPerfil = fotoPerfil,
-            curso = curso.toModel(),
+            curso = curso?.toModel(),
             dataCadastro = dataCadastro,
             statusConta = statusConta,
             iniciais = iniciais,
@@ -148,19 +129,13 @@ class UsuarioRepository @Inject constructor(
         return CursoModel(
             id = id,
             nome = nome,
-            area = AreaConhecimentoModel(
-                id = areaConhecimento.id,
-                nome = areaConhecimento.nome,
-                descricao = areaConhecimento.descricao
-            )
+            area = areaConhecimento?.let {
+                AreaConhecimentoModel(
+                    id = it.id,
+                    nome = it.nome,
+                    descricao = it.descricao
+                )
+            }
         )
     }
 }
-
-
-
-
-
-
-
-

@@ -2,6 +2,7 @@ package com.ifba.meuifba.di
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.ifba.meuifba.data.remote.AuthInterceptor
 import com.ifba.meuifba.data.remote.api.EventoApi
 import com.ifba.meuifba.data.remote.api.NotificacaoApi
 import com.ifba.meuifba.data.remote.api.UsuarioApi
@@ -20,8 +21,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "http://10.0.2.2:8080/api/" // Emulador
-    // Para dispositivo real, trocar para: "http://SEU_IP_LOCAL:8080/api/"
+    private const val BASE_URL = "http://10.0.2.2:8080/"
 
     @Provides
     @Singleton
@@ -42,9 +42,11 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        loggingInterceptor: HttpLoggingInterceptor
+        loggingInterceptor: HttpLoggingInterceptor,
+        authInterceptor: AuthInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -64,8 +66,6 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
-
-    // ========== APIs ==========
 
     @Provides
     @Singleton
