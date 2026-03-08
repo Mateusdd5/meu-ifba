@@ -31,6 +31,7 @@ import com.ifba.meuifba.presentation.viewmodel.LoginUiState
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToHome: () -> Unit,
+    onNavigateToHomeAsVisitor: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -41,12 +42,9 @@ fun LoginScreen(
     var senhaVisivel by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Observar estado e navegar em caso de sucesso
     LaunchedEffect(uiState) {
         when (val state = uiState) {
-            is LoginUiState.Success -> {
-                onNavigateToHome()
-            }
+            is LoginUiState.Success -> onNavigateToHome()
             is LoginUiState.Error -> {
                 snackbarHostState.showSnackbar(
                     message = state.message,
@@ -73,20 +71,17 @@ fun LoginScreen(
                     .padding(horizontal = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo/Título
                 Text(
                     text = "🎓",
                     fontSize = 64.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-
                 Text(
                     text = "Meu IFBA",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
-
                 Text(
                     text = "Faça login para continuar",
                     fontSize = 14.sp,
@@ -99,12 +94,7 @@ fun LoginScreen(
                     value = email,
                     onValueChange = viewModel::onEmailChange,
                     label = { Text("Email") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = "Email"
-                        )
-                    },
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
@@ -112,42 +102,30 @@ fun LoginScreen(
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(FocusDirection.Down) }
                     ),
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
                     enabled = uiState !is LoginUiState.Loading
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Campo Senha
                 OutlinedTextField(
                     value = senha,
                     onValueChange = viewModel::onSenhaChange,
                     label = { Text("Senha") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Senha"
-                        )
-                    },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Senha") },
+                    visualTransformation = if (senhaVisivel) VisualTransformation.None
+                    else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
                             Icon(
-                                imageVector = if (senhaVisivel)
-                                    Icons.Default.Visibility
-                                else
-                                    Icons.Default.VisibilityOff,
-                                contentDescription = if (senhaVisivel)
-                                    "Ocultar senha"
-                                else
-                                    "Mostrar senha"
+                                imageVector = if (senhaVisivel) Icons.Default.VisibilityOff
+                                else Icons.Default.Visibility,
+                                contentDescription = if (senhaVisivel) "Ocultar senha" else "Mostrar senha"
                             )
                         }
                     },
-                    visualTransformation = if (senhaVisivel)
-                        VisualTransformation.None
-                    else
-                        PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done
@@ -158,24 +136,14 @@ fun LoginScreen(
                             viewModel.login()
                         }
                     ),
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
                     enabled = uiState !is LoginUiState.Loading
                 )
 
-                // Esqueci a senha (TODO: implementar depois)
-                TextButton(
-                    onClick = { /* TODO: Implementar recuperação de senha */ },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Esqueci minha senha")
-                }
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Botão Login
+                // Botão Entrar
                 Button(
                     onClick = { viewModel.login() },
                     modifier = Modifier
@@ -193,7 +161,20 @@ fun LoginScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Botão Criar Conta
+                OutlinedButton(
+                    onClick = onNavigateToRegister,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    enabled = uiState !is LoginUiState.Loading
+                ) {
+                    Text("Criar conta", fontSize = 16.sp)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Divisor
                 Row(
@@ -210,17 +191,19 @@ fun LoginScreen(
                     Divider(modifier = Modifier.weight(1f))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Botão Cadastrar
-                OutlinedButton(
-                    onClick = onNavigateToRegister,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
+                // Botão Entrar como Visitante
+                TextButton(
+                    onClick = onNavigateToHomeAsVisitor,
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = uiState !is LoginUiState.Loading
                 ) {
-                    Text("Criar conta", fontSize = 16.sp)
+                    Text(
+                        text = "Entrar como visitante",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

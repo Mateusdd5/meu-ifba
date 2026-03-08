@@ -27,28 +27,23 @@ class EventoDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Pega o ID do evento da navegação
     private val eventoId: Long = savedStateHandle.get<Long>("eventoId") ?: 0L
 
-    // Estado da UI
     private val _uiState = MutableStateFlow<EventoDetailUiState>(EventoDetailUiState.Loading)
     val uiState: StateFlow<EventoDetailUiState> = _uiState.asStateFlow()
 
-    // ID do usuário logado
     private val usuarioId: Long
-        get() = preferencesManager.userId  // ← CORRIGIDO
+        get() = preferencesManager.userId
 
     init {
         loadEvento()
     }
 
-    // Carregar detalhes do evento
     private fun loadEvento() {
         viewModelScope.launch {
             _uiState.value = EventoDetailUiState.Loading
-
-            val evento = getEventoByIdUseCase(eventoId)
-
+            // Passa usuarioId para que isMarcado seja setado corretamente
+            val evento = getEventoByIdUseCase(eventoId, usuarioId)
             _uiState.value = if (evento != null) {
                 EventoDetailUiState.Success(evento)
             } else {
@@ -57,7 +52,6 @@ class EventoDetailViewModel @Inject constructor(
         }
     }
 
-    // Marcar/desmarcar participação
     fun toggleMarcacao() {
         val currentState = _uiState.value
         if (currentState !is EventoDetailUiState.Success) return
@@ -68,69 +62,43 @@ class EventoDetailViewModel @Inject constructor(
             } else {
                 marcarParticipacaoUseCase(usuarioId, eventoId)
             }
-
             when (result) {
-                is Resource.Success -> {
-                    // Recarregar evento para atualizar estado
-                    loadEvento()
-                }
-                is Resource.Error -> {
-                    // TODO: Mostrar erro na UI (Snackbar/Toast)
-                }
-                is Resource.Loading -> {
-                    // Ignorar
-                }
+                is Resource.Success -> loadEvento()
+                is Resource.Error -> { }
+                is Resource.Loading -> { }
             }
         }
     }
 
-    // Compartilhar evento
     fun shareEvento() {
-        val currentState = _uiState.value
-        if (currentState is EventoDetailUiState.Success) {
-            // TODO: Implementar compartilhamento via Intent quando tiver UI
-            // Será algo tipo:
-            // val shareIntent = Intent().apply {
-            //     action = Intent.ACTION_SEND
-            //     putExtra(Intent.EXTRA_TEXT, "Evento: ${currentState.evento.titulo}")
-            //     type = "text/plain"
-            // }
-        }
+        // TODO: Implementar compartilhamento via Intent
     }
 
-    // Deletar evento (apenas criador)
     fun deleteEvento() {
         viewModelScope.launch {
             _uiState.value = EventoDetailUiState.Loading
-
             when (val result = deleteEventoUseCase(eventoId)) {
-                is Resource.Success -> {
-                    _uiState.value = EventoDetailUiState.Deleted
-                }
-                is Resource.Error -> {
-                    _uiState.value = EventoDetailUiState.Error(
-                        result.message ?: "Erro ao deletar evento"
-                    )
-                }
-                is Resource.Loading -> {
-                    // Já está em loading
-                }
+                is Resource.Success -> _uiState.value = EventoDetailUiState.Deleted
+                is Resource.Error -> _uiState.value = EventoDetailUiState.Error(
+                    result.message ?: "Erro ao deletar evento"
+                )
+                is Resource.Loading -> { }
             }
         }
     }
 
-    // Verificar se usuário é criador
     fun isCreator(): Boolean {
         val currentState = _uiState.value
         return if (currentState is EventoDetailUiState.Success) {
             currentState.evento.criador.id == usuarioId
-        } else {
-            false
-        }
+        } else false
     }
+
+    fun isAdmin(): Boolean = preferencesManager.isAdmin()
+
+    fun canEditOrDelete(): Boolean = isCreator() || isAdmin()
 }
 
-// Estados possíveis da tela de detalhes
 sealed class EventoDetailUiState {
     object Loading : EventoDetailUiState()
     data class Success(val evento: EventoModel) : EventoDetailUiState()

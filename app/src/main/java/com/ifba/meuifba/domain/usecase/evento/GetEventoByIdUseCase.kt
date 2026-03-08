@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetEventoByIdUseCase @Inject constructor(
     private val eventoRepository: EventoRepository
 ) {
-    suspend operator fun invoke(eventoId: Long): EventoModel? {
-        return eventoRepository.getEventoById(eventoId)
+    suspend operator fun invoke(eventoId: Long, usuarioId: Long = -1L): EventoModel? {
+        return eventoRepository.getEventoById(eventoId, usuarioId)
     }
 }

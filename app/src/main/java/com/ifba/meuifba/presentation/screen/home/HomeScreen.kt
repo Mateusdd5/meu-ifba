@@ -30,11 +30,14 @@ fun HomeScreen(
     onNavigateToNotificacoes: () -> Unit,
     onNavigateToMeusEventos: () -> Unit,
     onNavigateToCreateEvento: () -> Unit,
+    onNavigateToLogin: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var showSearchBar by remember { mutableStateOf(false) }
+
+    val isAuthenticated = viewModel.isAuthenticated()
 
     Scaffold(
         topBar = {
@@ -73,19 +76,32 @@ fun HomeScreen(
                         IconButton(onClick = { showSearchBar = true }) {
                             Icon(Icons.Default.Search, "Buscar")
                         }
-                        IconButton(onClick = onNavigateToNotificacoes) {
-                            Icon(Icons.Default.Notifications, "Notificações")
-                        }
-                        IconButton(onClick = onNavigateToProfile) {
-                            Icon(Icons.Default.Person, "Perfil")
+                        if (isAuthenticated) {
+                            // Botão Meus Eventos
+                            IconButton(onClick = onNavigateToMeusEventos) {
+                                Icon(Icons.Default.Bookmark, "Meus Eventos")
+                            }
+                            IconButton(onClick = onNavigateToNotificacoes) {
+                                Icon(Icons.Default.Notifications, "Notificações")
+                            }
+                            IconButton(onClick = onNavigateToProfile) {
+                                Icon(Icons.Default.Person, "Perfil")
+                            }
+                        } else {
+                            // Visitante — botão para fazer login
+                            IconButton(onClick = onNavigateToLogin) {
+                                Icon(Icons.Default.Login, "Entrar")
+                            }
                         }
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToCreateEvento) {
-                Icon(Icons.Default.Add, "Criar evento")
+            if (isAuthenticated) {
+                FloatingActionButton(onClick = onNavigateToCreateEvento) {
+                    Icon(Icons.Default.Add, "Criar evento")
+                }
             }
         }
     ) { paddingValues ->
@@ -126,8 +142,18 @@ private fun EmptyState(onRefresh: () -> Unit) {
             modifier = Modifier.padding(32.dp)
         ) {
             Text(text = "📅", fontSize = 64.sp, modifier = Modifier.padding(bottom = 16.dp))
-            Text(text = "Nenhum evento encontrado", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-            Text(text = "Não há eventos disponíveis no momento", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 24.dp))
+            Text(
+                text = "Nenhum evento encontrado",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = "Não há eventos disponíveis no momento",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
             Button(onClick = onRefresh) { Text("Atualizar") }
         }
     }
@@ -141,8 +167,18 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
             modifier = Modifier.padding(32.dp)
         ) {
             Text(text = "⚠️", fontSize = 64.sp, modifier = Modifier.padding(bottom = 16.dp))
-            Text(text = "Erro ao carregar eventos", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-            Text(text = message, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 24.dp))
+            Text(
+                text = "Erro ao carregar eventos",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = message,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
             Button(onClick = onRetry) { Text("Tentar novamente") }
         }
     }
@@ -176,7 +212,9 @@ private fun EventoCard(
     onMarcacaoToggle: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -199,27 +237,61 @@ private fun EventoCard(
                 }
                 IconButton(onClick = onMarcacaoToggle) {
                     Icon(
-                        imageVector = if (evento.isMarcado) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        imageVector = if (evento.isMarcado) Icons.Default.Favorite
+                        else Icons.Default.FavoriteBorder,
                         contentDescription = "Marcar interesse",
-                        tint = if (evento.isMarcado) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (evento.isMarcado) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = evento.titulo, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = evento.titulo,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = evento.descricao, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = evento.descricao,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    Icons.Default.DateRange,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "${evento.dataFormatada} • ${evento.horarioInicio}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = "${evento.dataFormatada} • ${evento.horarioInicio}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = evento.local, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = evento.local,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

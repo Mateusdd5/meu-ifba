@@ -90,9 +90,12 @@ class RegisterViewModel @Inject constructor(
             )) {
                 is Resource.Success -> {
                     result.data?.let { usuario ->
+                        // Após registro, salva os dados básicos.
+                        // O token JWT só é obtido no login — por ora salvamos vazio.
                         preferencesManager.saveLoginData(
                             userId = usuario.id,
-                            token = "temp_token_${usuario.id}",
+                            token = preferencesManager.userToken ?: "",
+                            userType = usuario.tipoUsuario,
                             rememberMe = false
                         )
                         _uiState.value = RegisterUiState.Success(usuario)
@@ -126,9 +129,7 @@ class RegisterViewModel @Inject constructor(
                 is Resource.Success -> {
                     _cursosDisponiveis.value = result.data ?: emptyList()
                 }
-                is Resource.Error -> {
-                    // Silencioso — o campo de curso ficará desabilitado
-                }
+                is Resource.Error -> { /* Silencia o erro de cursos */ }
                 is Resource.Loading -> {}
             }
         }

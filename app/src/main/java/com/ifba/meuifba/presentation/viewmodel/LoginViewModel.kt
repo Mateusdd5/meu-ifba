@@ -51,9 +51,12 @@ class LoginViewModel @Inject constructor(
             when (val result = loginUseCase(_email.value, _senha.value)) {
                 is Resource.Success -> {
                     result.data?.let { usuario ->
+                        // Token e userType já foram salvos pelo UsuarioRepository.login()
+                        // Aqui garantimos que os dados estão consistentes
                         preferencesManager.saveLoginData(
                             userId = usuario.id,
                             token = preferencesManager.userToken ?: "",
+                            userType = usuario.tipoUsuario,
                             rememberMe = false
                         )
                         _uiState.value = LoginUiState.Success(usuario)

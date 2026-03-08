@@ -8,7 +8,7 @@ object Constants {
 
     // Network
     const val BASE_URL_EMULATOR = "http://10.0.2.2:8080/api/"
-    const val BASE_URL_DEVICE = "http://192.168.1.100:8080/api/" // Alterar para seu IP
+    const val BASE_URL_DEVICE = "http://192.168.1.100:8080/api/"
     const val CONNECT_TIMEOUT = 30L
     const val READ_TIMEOUT = 30L
     const val WRITE_TIMEOUT = 30L
@@ -44,6 +44,7 @@ object Constants {
     const val PREFS_NAME = "meu_ifba_prefs"
     const val KEY_USER_ID = "user_id"
     const val KEY_USER_TOKEN = "user_token"
+    const val KEY_USER_TYPE = "user_type"
     const val KEY_IS_LOGGED_IN = "is_logged_in"
     const val KEY_REMEMBER_ME = "remember_me"
 
@@ -51,11 +52,9 @@ object Constants {
     const val EXTRA_EVENTO_ID = "extra_evento_id"
     const val EXTRA_USUARIO_ID = "extra_usuario_id"
 
-    // Tipos de usuário
-    const val TIPO_VISITANTE = "visitante"
-    const val TIPO_USUARIO = "usuario_autenticado"
-    const val TIPO_ORGANIZADOR = "organizador"
-    const val TIPO_ADMIN = "administrador"
+    // Tipos de usuário — valores padronizados usados no banco e em toda a aplicação
+    const val TIPO_USUARIO = "USUARIO"   // estudante cadastrado
+    const val TIPO_ADMIN = "ADMIN"       // administrador do IFBA
 
     // Status de inscrição
     const val STATUS_ABERTAS = "abertas"

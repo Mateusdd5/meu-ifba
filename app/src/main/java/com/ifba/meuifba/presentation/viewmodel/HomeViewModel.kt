@@ -2,62 +2,53 @@ package com.ifba.meuifba.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ifba.meuifba.domain.model.CategoriaModel
 import com.ifba.meuifba.domain.model.EventoModel
 import com.ifba.meuifba.domain.usecase.evento.GetEventosUseCase
-import com.ifba.meuifba.domain.usecase.evento.GetEventosPorCategoriaUseCase
-import com.ifba.meuifba.domain.usecase.evento.SearchEventosUseCase
 import com.ifba.meuifba.domain.usecase.evento.MarcarParticipacaoUseCase
 import com.ifba.meuifba.domain.usecase.evento.DesmarcarParticipacaoUseCase
 import com.ifba.meuifba.utils.PreferencesManager
 import com.ifba.meuifba.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getEventosUseCase: GetEventosUseCase,
-    private val getEventosPorCategoriaUseCase: GetEventosPorCategoriaUseCase,
-    private val searchEventosUseCase: SearchEventosUseCase,
     private val marcarParticipacaoUseCase: MarcarParticipacaoUseCase,
     private val desmarcarParticipacaoUseCase: DesmarcarParticipacaoUseCase,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
-    // Estado da UI
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // Busca
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // Filtro por categoria
-    private val _selectedCategoria = MutableStateFlow<CategoriaModel?>(null)
-    val selectedCategoria: StateFlow<CategoriaModel?> = _selectedCategoria.asStateFlow()
+    private val _selectedCategoria = MutableStateFlow<Long?>(null)
 
-    // ID do usuário logado
     private val usuarioId: Long
-        get() = preferencesManager.userId  // ← CORRIGIDO
+        get() = preferencesManager.userId
+
+    fun isAuthenticated(): Boolean = preferencesManager.isAuthenticated()
+    fun isAdmin(): Boolean = preferencesManager.isAdmin()
 
     init {
         loadEventos()
     }
 
-    // Carregar eventos
     fun loadEventos() {
         viewModelScope.launch {
-            getEventosUseCase().collect { result ->
+            getEventosUseCase(usuarioId).collect { result ->
                 _uiState.value = when (result) {
                     is Resource.Loading -> HomeUiState.Loading
                     is Resource.Success -> {
-                        if (result.data.isNullOrEmpty()) {
-                            HomeUiState.Empty
-                        } else {
-                            HomeUiState.Success(result.data)
-                        }
+                        if (result.data.isNullOrEmpty()) HomeUiState.Empty
+                        else HomeUiState.Success(result.data)
                     }
                     is Resource.Error -> HomeUiState.Error(
                         result.message ?: "Erro ao carregar eventos"
@@ -67,63 +58,32 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // Buscar eventos
     fun searchEventos(query: String) {
         _searchQuery.value = query
-
-        if (query.isBlank()) {
-            loadEventos()
-            return
-        }
-
         viewModelScope.launch {
-            searchEventosUseCase(query).collect { result ->
-                _uiState.value = when (result) {
-                    is Resource.Loading -> HomeUiState.Loading
-                    is Resource.Success -> {
-                        if (result.data.isNullOrEmpty()) {
-                            HomeUiState.Empty
-                        } else {
-                            HomeUiState.Success(result.data)
+            if (query.isBlank()) {
+                loadEventos()
+            } else {
+                getEventosUseCase(usuarioId).collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            val filtrados = result.data?.filter {
+                                it.titulo.contains(query, ignoreCase = true) ||
+                                        it.descricao.contains(query, ignoreCase = true)
+                            } ?: emptyList()
+                            _uiState.value = if (filtrados.isEmpty()) HomeUiState.Empty
+                            else HomeUiState.Success(filtrados)
                         }
+                        is Resource.Error -> _uiState.value = HomeUiState.Error(
+                            result.message ?: "Erro ao filtrar eventos"
+                        )
+                        else -> {}
                     }
-                    is Resource.Error -> HomeUiState.Error(
-                        result.message ?: "Erro ao buscar eventos"
-                    )
                 }
             }
         }
     }
 
-    // Filtrar por categoria
-    fun filterByCategoria(categoria: CategoriaModel?) {
-        _selectedCategoria.value = categoria
-
-        if (categoria == null) {
-            loadEventos()
-            return
-        }
-
-        viewModelScope.launch {
-            getEventosPorCategoriaUseCase(categoria.id).collect { result ->
-                _uiState.value = when (result) {
-                    is Resource.Loading -> HomeUiState.Loading
-                    is Resource.Success -> {
-                        if (result.data.isNullOrEmpty()) {
-                            HomeUiState.Empty
-                        } else {
-                            HomeUiState.Success(result.data)
-                        }
-                    }
-                    is Resource.Error -> HomeUiState.Error(
-                        result.message ?: "Erro ao filtrar eventos"
-                    )
-                }
-            }
-        }
-    }
-
-    // Marcar interesse em evento
     fun toggleMarcacao(eventoId: Long, isMarcado: Boolean) {
         viewModelScope.launch {
             val result = if (isMarcado) {
@@ -131,29 +91,19 @@ class HomeViewModel @Inject constructor(
             } else {
                 marcarParticipacaoUseCase(usuarioId, eventoId)
             }
-
             when (result) {
-                is Resource.Success -> {
-                    // Atualizar lista
-                    loadEventos()
-                }
-                is Resource.Error -> {
-                    // Mostrar erro (toast ou snackbar na UI)
-                }
-                is Resource.Loading -> {
-                    // Ignorar
-                }
+                is Resource.Success -> loadEventos()
+                is Resource.Error -> { }
+                is Resource.Loading -> { }
             }
         }
     }
 
-    // Limpar busca
     fun clearSearch() {
         _searchQuery.value = ""
         loadEventos()
     }
 
-    // Limpar filtros
     fun clearFilters() {
         _selectedCategoria.value = null
         _searchQuery.value = ""
@@ -161,7 +111,6 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-// Estados possíveis da Home
 sealed class HomeUiState {
     object Loading : HomeUiState()
     object Empty : HomeUiState()

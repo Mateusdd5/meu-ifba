@@ -27,7 +27,7 @@ class CreateEventoViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val eventoId: Long? = savedStateHandle.get<Long>("eventoId")
-    private val isEditMode: Boolean = eventoId != null
+    val isEditMode: Boolean = eventoId != null  // exposto para a tela
 
     private val _uiState = MutableStateFlow<CreateEventoUiState>(CreateEventoUiState.Idle)
     val uiState: StateFlow<CreateEventoUiState> = _uiState.asStateFlow()
@@ -65,36 +65,39 @@ class CreateEventoViewModel @Inject constructor(
     private val _certificacao = MutableStateFlow(false)
     val certificacao: StateFlow<Boolean> = _certificacao.asStateFlow()
 
-    private val _categoriaSelecionada = MutableStateFlow<CategoriaModel?>(null)
-    val categoriaSelecionada: StateFlow<CategoriaModel?> = _categoriaSelecionada.asStateFlow()
-
     private val _categorias = MutableStateFlow<List<CategoriaModel>>(emptyList())
     val categorias: StateFlow<List<CategoriaModel>> = _categorias.asStateFlow()
+
+    private val _categoriaSelecionada = MutableStateFlow<CategoriaModel?>(null)
+    val categoriaSelecionada: StateFlow<CategoriaModel?> = _categoriaSelecionada.asStateFlow()
 
     private val usuarioId: Long
         get() = preferencesManager.userId
 
     init {
         loadCategorias()
-        if (isEditMode && eventoId != null) {
-            loadEvento(eventoId)
+        if (isEditMode) {
+            loadEvento()
         }
     }
 
     private fun loadCategorias() {
-        _categorias.value = listOf(
-            CategoriaModel(id = 1, nome = "Workshop", descricao = "Atividades práticas", icone = "🛠️", cor = "#FF9800"),
-            CategoriaModel(id = 2, nome = "Palestra", descricao = "Apresentações e talks", icone = "🎤", cor = "#2196F3"),
-            CategoriaModel(id = 3, nome = "Seminário", descricao = "Discussões acadêmicas", icone = "📚", cor = "#9C27B0"),
-            CategoriaModel(id = 4, nome = "Competição", descricao = "Eventos competitivos", icone = "🏆", cor = "#F44336"),
-            CategoriaModel(id = 5, nome = "Hackathon", descricao = "Maratonas de programação", icone = "💻", cor = "#4CAF50")
-        )
+        viewModelScope.launch {
+            // Categorias fixas refletindo o banco de dados
+            _categorias.value = listOf(
+                CategoriaModel(id = 1, nome = "Workshop", descricao = "", icone = "", cor = ""),
+                CategoriaModel(id = 2, nome = "Palestra", descricao = "", icone = "", cor = ""),
+                CategoriaModel(id = 3, nome = "Seminário", descricao = "", icone = "", cor = ""),
+                CategoriaModel(id = 4, nome = "Competição", descricao = "", icone = "", cor = ""),
+                CategoriaModel(id = 5, nome = "Hackathon", descricao = "", icone = "", cor = "")
+            )
+        }
     }
 
-    private fun loadEvento(id: Long) {
+    private fun loadEvento() {
         viewModelScope.launch {
             _uiState.value = CreateEventoUiState.Loading
-            val evento = getEventoByIdUseCase(id)
+            val evento = getEventoByIdUseCase(eventoId!!)
             if (evento != null) {
                 _titulo.value = evento.titulo
                 _descricao.value = evento.descricao
@@ -102,9 +105,9 @@ class CreateEventoViewModel @Inject constructor(
                 _dataEvento.value = evento.dataEvento
                 _horarioInicio.value = evento.horarioInicio
                 _horarioFim.value = evento.horarioFim
-                _publicoAlvo.value = evento.publicoAlvo
-                _cargaHoraria.value = evento.cargaHoraria.toString()
-                _numeroVagas.value = evento.numeroVagas.toString()
+                _publicoAlvo.value = evento.publicoAlvo ?: ""
+                _cargaHoraria.value = evento.cargaHoraria?.toString() ?: ""
+                _numeroVagas.value = evento.numeroVagas?.toString() ?: ""
                 _requisitos.value = evento.requisitos ?: ""
                 _certificacao.value = evento.certificacao
                 _categoriaSelecionada.value = evento.categoria
@@ -189,7 +192,9 @@ class CreateEventoViewModel @Inject constructor(
             _uiState.value = when (result) {
                 is Resource.Success -> result.data?.let { CreateEventoUiState.Success(it) }
                     ?: CreateEventoUiState.Error("Erro ao salvar evento")
-                is Resource.Error -> CreateEventoUiState.Error(result.message ?: "Erro ao salvar evento")
+                is Resource.Error -> CreateEventoUiState.Error(
+                    result.message ?: "Erro ao salvar evento"
+                )
                 is Resource.Loading -> CreateEventoUiState.Loading
             }
         }

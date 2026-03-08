@@ -30,7 +30,6 @@ fun EventoDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Observar estado de deletado
     LaunchedEffect(uiState) {
         when (uiState) {
             is EventoDetailUiState.Deleted -> {
@@ -52,13 +51,11 @@ fun EventoDetailScreen(
                     }
                 },
                 actions = {
-                    // Compartilhar
                     IconButton(onClick = viewModel::shareEvento) {
                         Icon(Icons.Default.Share, "Compartilhar")
                     }
 
-                    // Menu de opções (apenas para criador)
-                    if (viewModel.isCreator()) {
+                    if (viewModel.canEditOrDelete()) {
                         var showMenu by remember { mutableStateOf(false) }
 
                         Box {
@@ -128,7 +125,6 @@ fun EventoDetailScreen(
         }
     }
 
-    // Dialog de confirmação de deleção
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -215,7 +211,7 @@ private fun EventoDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Header com imagem (placeholder por enquanto)
+        // Header com ícone da categoria
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -286,26 +282,23 @@ private fun EventoDetailContent(
                 label = "Data",
                 value = "${evento.dataFormatada} (${evento.diaDaSemana})"
             )
-
             InfoRow(
                 icon = Icons.Default.AccessTime,
                 label = "Horário",
                 value = "${evento.horarioInicio} - ${evento.horarioFim} (${evento.duracao})"
             )
-
             InfoRow(
                 icon = Icons.Default.LocationOn,
                 label = "Local",
                 value = evento.local
             )
-
             InfoRow(
                 icon = Icons.Default.Group,
                 label = "Público-alvo",
-                value = evento.publicoAlvo
+                value = evento.publicoAlvo ?: ""
             )
 
-            if (evento.cargaHoraria > 0) {
+            if ((evento.cargaHoraria ?: 0) > 0) {
                 InfoRow(
                     icon = Icons.Default.Schedule,
                     label = "Carga horária",
@@ -320,7 +313,7 @@ private fun EventoDetailContent(
             )
 
             // Vagas
-            if (evento.numeroVagas > 0) {
+            if ((evento.numeroVagas ?: 0) > 0) {
                 Divider(modifier = Modifier.padding(vertical = 16.dp))
 
                 Text(
@@ -402,10 +395,10 @@ private fun EventoDetailContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(80.dp)) // Espaço para o botão fixo
+            Spacer(modifier = Modifier.height(80.dp))
         }
 
-        // Botão de ação fixo na parte inferior
+        // Botão fixo na parte inferior
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shadowElevation = 8.dp
@@ -416,7 +409,7 @@ private fun EventoDetailContent(
                     .fillMaxWidth()
                     .padding(16.dp)
                     .height(50.dp),
-                enabled = !evento.isLotado
+                enabled = !evento.isLotado || evento.isMarcado  // ← CORREÇÃO: lotado mas marcado = pode desmarcar
             ) {
                 Icon(
                     imageVector = if (evento.isMarcado)
@@ -429,6 +422,7 @@ private fun EventoDetailContent(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = when {
+                        evento.isLotado && evento.isMarcado -> "Remover interesse"
                         evento.isLotado -> "Evento lotado"
                         evento.isMarcado -> "Remover interesse"
                         else -> "Marcar interesse"

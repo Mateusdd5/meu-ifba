@@ -1,9 +1,12 @@
 package com.ifba.meuifba.presentation.screen
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -11,19 +14,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ifba.meuifba.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ifba.meuifba.presentation.viewmodel.SplashViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
+    viewModel: SplashViewModel = hiltViewModel()
 ) {
-    // Animação de fade in
     var startAnimation by remember { mutableStateOf(false) }
     val alphaAnim = animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
@@ -31,16 +34,11 @@ fun SplashScreen(
         label = "alpha"
     )
 
-    // Verificar autenticação e navegar
     LaunchedEffect(key1 = true) {
         startAnimation = true
-        delay(2000) // 2 segundos de splash
+        delay(2000)
 
-        // TODO: Verificar se usuário está logado
-        // val isLoggedIn = preferencesManager.isAuthenticated()
-        val isLoggedIn = false // Por enquanto sempre vai pro login
-
-        if (isLoggedIn) {
+        if (viewModel.isAuthenticated()) {
             onNavigateToHome()
         } else {
             onNavigateToLogin()
@@ -57,21 +55,17 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.alpha(alphaAnim.value)
         ) {
-            // Logo do app (por enquanto texto)
-            // TODO: Substituir por logo real quando tiver
             Text(
                 text = "🎓",
                 fontSize = 80.sp,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-
             Text(
                 text = "Meu IFBA",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-
             Text(
                 text = "Eventos Acadêmicos",
                 fontSize = 16.sp,

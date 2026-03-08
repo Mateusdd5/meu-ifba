@@ -26,6 +26,11 @@ class PreferencesManager @Inject constructor(
         get() = prefs.getString(Constants.KEY_USER_TOKEN, null)
         set(value) = prefs.edit().putString(Constants.KEY_USER_TOKEN, value).apply()
 
+    // User Type
+    var userType: String
+        get() = prefs.getString(Constants.KEY_USER_TYPE, Constants.TIPO_USUARIO) ?: Constants.TIPO_USUARIO
+        set(value) = prefs.edit().putString(Constants.KEY_USER_TYPE, value).apply()
+
     // Is Logged In
     var isLoggedIn: Boolean
         get() = prefs.getBoolean(Constants.KEY_IS_LOGGED_IN, false)
@@ -37,9 +42,15 @@ class PreferencesManager @Inject constructor(
         set(value) = prefs.edit().putBoolean(Constants.KEY_REMEMBER_ME, value).apply()
 
     // Salvar dados de login
-    fun saveLoginData(userId: Long, token: String, rememberMe: Boolean = false) {
+    fun saveLoginData(
+        userId: Long,
+        token: String,
+        userType: String = Constants.TIPO_USUARIO,
+        rememberMe: Boolean = false
+    ) {
         this.userId = userId
         this.userToken = token
+        this.userType = userType
         this.isLoggedIn = true
         this.rememberMe = rememberMe
     }
@@ -49,8 +60,8 @@ class PreferencesManager @Inject constructor(
         prefs.edit().apply {
             remove(Constants.KEY_USER_ID)
             remove(Constants.KEY_USER_TOKEN)
+            remove(Constants.KEY_USER_TYPE)
             remove(Constants.KEY_IS_LOGGED_IN)
-            // Mantém rememberMe se usuário marcou
         }.apply()
     }
 
@@ -59,8 +70,11 @@ class PreferencesManager @Inject constructor(
         prefs.edit().clear().apply()
     }
 
-    // Verificar se usuário está autenticado
+    // Verificar se usuário está autenticado (tem conta e token)
     fun isAuthenticated(): Boolean {
         return isLoggedIn && userId != -1L && !userToken.isNullOrBlank()
     }
+
+    // Verificações de tipo
+    fun isAdmin(): Boolean = userType == Constants.TIPO_ADMIN
 }

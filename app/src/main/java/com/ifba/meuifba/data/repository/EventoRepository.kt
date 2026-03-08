@@ -18,12 +18,30 @@ class EventoRepository @Inject constructor(
     private val eventoApi: EventoApi
 ) {
 
-    fun getEventos(): Flow<Resource<List<EventoModel>>> = flow {
+    fun getEventos(usuarioId: Long = -1L): Flow<Resource<List<EventoModel>>> = flow {
         emit(Resource.Loading())
         try {
             val response = eventoApi.getEventos()
             if (response.isSuccessful && response.body() != null) {
                 val eventos = response.body()!!.map { it.toModel() }
+
+                if (usuarioId > 0) {
+                    try {
+                        val marcadosResponse = eventoApi.getEventosMarcados(usuarioId)
+                        if (marcadosResponse.isSuccessful && marcadosResponse.body() != null) {
+                            val marcadosIds = marcadosResponse.body()!!.map { it.id }.toSet()
+                            val comMarcacao = eventos.map { evento ->
+                                if (evento.id in marcadosIds) evento.copy(isMarcado = true)
+                                else evento
+                            }
+                            emit(Resource.Success(comMarcacao))
+                            return@flow
+                        }
+                    } catch (e: Exception) {
+                        // Se falhar ao buscar marcados, retorna sem isMarcado
+                    }
+                }
+
                 emit(Resource.Success(eventos))
             } else {
                 emit(Resource.Error("Erro ao buscar eventos: ${response.message()}"))
@@ -33,14 +51,28 @@ class EventoRepository @Inject constructor(
         }
     }
 
-    suspend fun getEventoById(eventoId: Long): EventoModel? {
+    suspend fun getEventoById(eventoId: Long, usuarioId: Long = -1L): EventoModel? {
         return try {
             val response = eventoApi.getEventoById(eventoId)
             if (response.isSuccessful && response.body() != null) {
-                response.body()!!.toModel()
-            } else {
-                null
-            }
+                val evento = response.body()!!.toModel()
+
+                // Verificar se o usuário marcou este evento
+                if (usuarioId > 0) {
+                    try {
+                        val marcadosResponse = eventoApi.getEventosMarcados(usuarioId)
+                        if (marcadosResponse.isSuccessful && marcadosResponse.body() != null) {
+                            val marcadosIds = marcadosResponse.body()!!.map { it.id }.toSet()
+                            return if (evento.id in marcadosIds) evento.copy(isMarcado = true)
+                            else evento
+                        }
+                    } catch (e: Exception) {
+                        // Se falhar, retorna sem isMarcado
+                    }
+                }
+
+                evento
+            } else null
         } catch (e: Exception) {
             null
         }
@@ -76,6 +108,21 @@ class EventoRepository @Inject constructor(
         }
     }
 
+    fun getEventosMarcados(usuarioId: Long): Flow<Resource<List<EventoModel>>> = flow {
+        emit(Resource.Loading())
+        try {
+            val response = eventoApi.getEventosMarcados(usuarioId)
+            if (response.isSuccessful && response.body() != null) {
+                val eventos = response.body()!!.map { it.toModel().copy(isMarcado = true) }
+                emit(Resource.Success(eventos))
+            } else {
+                emit(Resource.Error("Erro ao buscar eventos marcados"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "Erro desconhecido"))
+        }
+    }
+
     suspend fun createEvento(request: CreateEventoRequest): Resource<EventoModel?> {
         return try {
             val response = eventoApi.createEvento(request)
@@ -95,7 +142,7 @@ class EventoRepository @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 Resource.Success(response.body()!!.toModel())
             } else {
-                Resource.Error("Erro ao atualizar evento")
+                Resource.Error("Erro ao atualizar evento: ${response.message()}")
             }
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Erro desconhecido")
@@ -108,7 +155,7 @@ class EventoRepository @Inject constructor(
             if (response.isSuccessful) {
                 Resource.Success(Unit)
             } else {
-                Resource.Error("Erro ao deletar evento")
+                Resource.Error("Erro ao deletar evento: ${response.message()}")
             }
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Erro desconhecido")

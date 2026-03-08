@@ -79,7 +79,9 @@ fun CreateEventoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Criar Evento") },
+                title = {
+                    Text(if (viewModel.isEditMode) "Editar Evento" else "Criar Evento")
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Voltar")
@@ -121,8 +123,12 @@ fun CreateEventoScreen(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Categoria *") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriasDropdownExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriasDropdownExpanded)
+                    },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = categoriasDropdownExpanded,
@@ -154,19 +160,19 @@ fun CreateEventoScreen(
                 placeholder = { Text("Selecione a data") },
                 trailingIcon = {
                     IconButton(onClick = { datePickerDialog.show() }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Selecionar data")
+                        Icon(Icons.Default.CalendarMonth, "Selecionar data")
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
                     value = horarioInicio,
                     onValueChange = viewModel::onHorarioInicioChange,
-                    label = { Text("Início *") },
+                    label = { Text("Início") },
                     placeholder = { Text("08:00") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -174,8 +180,8 @@ fun CreateEventoScreen(
                 OutlinedTextField(
                     value = horarioFim,
                     onValueChange = viewModel::onHorarioFimChange,
-                    label = { Text("Fim *") },
-                    placeholder = { Text("17:00") },
+                    label = { Text("Fim") },
+                    placeholder = { Text("12:00") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -184,36 +190,34 @@ fun CreateEventoScreen(
                 value = publicoAlvo,
                 onValueChange = viewModel::onPublicoAlvoChange,
                 label = { Text("Público alvo") },
-                placeholder = { Text("Ex: Todos os alunos") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
                     value = cargaHoraria,
                     onValueChange = viewModel::onCargaHorariaChange,
                     label = { Text("Carga horária (h)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    singleLine = true
                 )
                 OutlinedTextField(
                     value = numeroVagas,
                     onValueChange = viewModel::onNumeroVagasChange,
-                    label = { Text("Vagas *") },
+                    label = { Text("Nº de vagas") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    singleLine = true
                 )
             }
             OutlinedTextField(
                 value = requisitos,
                 onValueChange = viewModel::onRequisitosChange,
                 label = { Text("Requisitos") },
-                placeholder = { Text("Ex: Conhecimento básico em Python") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
                 maxLines = 3
@@ -223,22 +227,26 @@ fun CreateEventoScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Emite certificado?")
+                Text("Emite certificado")
                 Switch(
                     checked = certificacao,
                     onCheckedChange = viewModel::onCertificacaoChange
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = viewModel::saveEvento,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
                 enabled = uiState !is CreateEventoUiState.Loading
             ) {
                 if (uiState is CreateEventoUiState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 } else {
-                    Text("Publicar Evento")
+                    Text(if (viewModel.isEditMode) "Salvar alterações" else "Criar evento")
                 }
             }
         }

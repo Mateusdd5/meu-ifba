@@ -4,8 +4,8 @@ import com.ifba.meuifba.data.local.database.dao.UsuarioDao
 import com.ifba.meuifba.data.remote.api.UsuarioApi
 import com.ifba.meuifba.data.remote.dto.LoginRequest
 import com.ifba.meuifba.data.remote.dto.RegisterRequest
-import com.ifba.meuifba.data.remote.dto.UsuarioResponse
 import com.ifba.meuifba.data.remote.dto.CursoResponse
+import com.ifba.meuifba.data.remote.dto.UsuarioResponse
 import com.ifba.meuifba.domain.model.AreaConhecimentoModel
 import com.ifba.meuifba.domain.model.CursoModel
 import com.ifba.meuifba.domain.model.UsuarioModel
@@ -34,6 +34,7 @@ class UsuarioRepository @Inject constructor(
                 preferencesManager.saveLoginData(
                     userId = loginResponse.usuario.id,
                     token = loginResponse.token,
+                    userType = loginResponse.usuario.tipoUsuario,
                     rememberMe = true
                 )
                 Resource.Success(loginResponse.usuario.toModel())
@@ -120,7 +121,7 @@ class UsuarioRepository @Inject constructor(
             statusConta = statusConta,
             iniciais = iniciais,
             dataCadastroFormatada = dataFormatada,
-            isOrganizador = tipoUsuario == "ORGANIZADOR" || tipoUsuario == "ADMIN",
+            isOrganizador = tipoUsuario == "USUARIO" || tipoUsuario == "ADMIN",
             isAdmin = tipoUsuario == "ADMIN"
         )
     }
