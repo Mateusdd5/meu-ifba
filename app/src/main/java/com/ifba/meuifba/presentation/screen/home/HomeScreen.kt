@@ -31,6 +31,7 @@ fun HomeScreen(
     onNavigateToMeusEventos: () -> Unit,
     onNavigateToCreateEvento: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToAdminDashboard: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -38,6 +39,7 @@ fun HomeScreen(
     var showSearchBar by remember { mutableStateOf(false) }
 
     val isAuthenticated = viewModel.isAuthenticated()
+    val isAdmin = viewModel.isAdmin()
 
     Scaffold(
         topBar = {
@@ -77,7 +79,11 @@ fun HomeScreen(
                             Icon(Icons.Default.Search, "Buscar")
                         }
                         if (isAuthenticated) {
-                            // Botão Meus Eventos
+                            if (isAdmin) {
+                                IconButton(onClick = onNavigateToAdminDashboard) {
+                                    Icon(Icons.Default.AdminPanelSettings, "Dashboard Admin")
+                                }
+                            }
                             IconButton(onClick = onNavigateToMeusEventos) {
                                 Icon(Icons.Default.Bookmark, "Meus Eventos")
                             }
@@ -88,7 +94,6 @@ fun HomeScreen(
                                 Icon(Icons.Default.Person, "Perfil")
                             }
                         } else {
-                            // Visitante — botão para fazer login
                             IconButton(onClick = onNavigateToLogin) {
                                 Icon(Icons.Default.Login, "Entrar")
                             }

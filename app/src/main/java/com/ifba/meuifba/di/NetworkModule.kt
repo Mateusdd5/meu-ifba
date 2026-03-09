@@ -3,6 +3,7 @@ package com.ifba.meuifba.di
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.ifba.meuifba.data.remote.AuthInterceptor
+import com.ifba.meuifba.data.remote.api.AdminApi
 import com.ifba.meuifba.data.remote.api.EventoApi
 import com.ifba.meuifba.data.remote.api.NotificacaoApi
 import com.ifba.meuifba.data.remote.api.UsuarioApi
@@ -83,5 +84,11 @@ object NetworkModule {
     @Singleton
     fun provideNotificacaoApi(retrofit: Retrofit): NotificacaoApi {
         return retrofit.create(NotificacaoApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAdminApi(retrofit: Retrofit): AdminApi {
+        return retrofit.create(AdminApi::class.java)
     }
 }

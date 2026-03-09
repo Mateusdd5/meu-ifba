@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.ifba.meuifba.presentation.screen.SplashScreen
+import com.ifba.meuifba.presentation.screen.admin.AdminDashboardScreen
 import com.ifba.meuifba.presentation.screen.auth.LoginScreen
 import com.ifba.meuifba.presentation.screen.auth.RegisterScreen
 import com.ifba.meuifba.presentation.screen.home.HomeScreen
@@ -78,6 +79,9 @@ fun NavGraph(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
+                },
+                onNavigateToAdminDashboard = {
+                    navController.navigate(Screen.AdminDashboard.route)
                 }
             )
         }
@@ -133,6 +137,12 @@ fun NavGraph(
 
         composable(route = Screen.Notificacoes.route) {
             NotificacoesScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable(route = Screen.AdminDashboard.route) {
+            AdminDashboardScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
         }
