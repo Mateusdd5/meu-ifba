@@ -25,7 +25,7 @@ fun Usuario.toModel(
         fotoPerfil = this.fotoPerfil,
         curso = CursoModel(
             id = curso.id,
-            nome = curso.nomeCurso,    // ← CORRIGIDO
+            nome = curso.nomeCurso,
             area = AreaConhecimentoModel(
                 id = area.id,
                 nome = area.nomeArea,
@@ -47,12 +47,12 @@ fun UsuarioResponse.toEntity(): Usuario {
         id = this.id,
         nome = this.nome,
         email = this.email,
-        senha = "", // Não armazenamos senha localmente
+        senha = "",
         tipoUsuario = this.tipoUsuario,
         fotoPerfil = this.fotoPerfil,
-        cursoId = this.curso.id,
+        cursoId = this.curso?.id ?: 0,  // ← nullable
         dataCadastro = this.dataCadastro,
-        statusConta = this.statusConta
+        statusConta = this.statusConta ?: "ATIVO"
     )
 }
 
@@ -64,17 +64,21 @@ fun UsuarioResponse.toModel(): UsuarioModel {
         email = this.email,
         tipoUsuario = this.tipoUsuario,
         fotoPerfil = this.fotoPerfil,
-        curso = CursoModel(
-            id = this.curso.id,
-            nome = this.curso.nome,  // ← Este OK (vem do DTO)
-            area = AreaConhecimentoModel(
-                id = this.curso.areaConhecimento.id,
-                nome = this.curso.areaConhecimento.nome,
-                descricao = this.curso.areaConhecimento.descricao
+        curso = this.curso?.let { c ->
+            CursoModel(
+                id = c.id,
+                nome = c.nome,
+                area = c.areaConhecimento?.let {
+                    AreaConhecimentoModel(
+                        id = it.id,
+                        nome = it.nome,
+                        descricao = it.descricao
+                    )
+                }
             )
-        ),
+        },
         dataCadastro = this.dataCadastro,
-        statusConta = this.statusConta,
+        statusConta = this.statusConta ?: "ATIVO",
         iniciais = getIniciais(this.nome),
         dataCadastroFormatada = formatDate(this.dataCadastro),
         isOrganizador = this.tipoUsuario == "ORGANIZADOR",

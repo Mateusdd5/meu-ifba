@@ -27,7 +27,7 @@ fun CursoResponse.toEntity(): Curso {
     return Curso(
         id = this.id,
         nomeCurso = this.nome,
-        areaId = this.areaConhecimento.id
+        areaId = this.areaConhecimento?.id ?: 0  // ← nullable
     )
 }
 
@@ -36,11 +36,13 @@ fun CursoResponse.toModel(): CursoModel {
     return CursoModel(
         id = this.id,
         nome = this.nome,
-        area = AreaConhecimentoModel(
-            id = this.areaConhecimento.id,
-            nome = this.areaConhecimento.nome,
-            descricao = this.areaConhecimento.descricao
-        )
+        area = this.areaConhecimento?.let {
+            AreaConhecimentoModel(
+                id = it.id,
+                nome = it.nome,
+                descricao = it.descricao
+            )
+        }
     )
 }
 

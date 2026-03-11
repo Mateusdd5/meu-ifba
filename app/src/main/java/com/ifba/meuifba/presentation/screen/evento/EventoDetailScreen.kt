@@ -152,8 +152,6 @@ fun EventoDetailScreen(
     }
 }
 
-// ========== COMPONENTES AUXILIARES ==========
-
 @Composable
 private fun LoadingState() {
     Box(
@@ -376,25 +374,6 @@ private fun EventoDetailContent(
                 )
             }
 
-            // Estatísticas
-            Divider(modifier = Modifier.padding(vertical = 16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatCard(
-                    icon = Icons.Default.Visibility,
-                    label = "Visualizações",
-                    value = evento.numeroVisualizacoes.toString()
-                )
-                StatCard(
-                    icon = Icons.Default.Bookmark,
-                    label = "Marcações",
-                    value = evento.numeroMarcacoes.toString()
-                )
-            }
-
             Spacer(modifier = Modifier.height(80.dp))
         }
 
@@ -409,7 +388,7 @@ private fun EventoDetailContent(
                     .fillMaxWidth()
                     .padding(16.dp)
                     .height(50.dp),
-                enabled = !evento.isLotado || evento.isMarcado  // ← CORREÇÃO: lotado mas marcado = pode desmarcar
+                enabled = !evento.isLotado || evento.isMarcado
             ) {
                 Icon(
                     imageVector = if (evento.isMarcado)
@@ -466,43 +445,6 @@ private fun InfoRow(
                 text = value,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String
-) {
-    Card(
-        modifier = Modifier.width(140.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

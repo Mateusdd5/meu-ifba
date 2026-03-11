@@ -10,5 +10,5 @@ data class CursoResponse(
     val nome: String,
 
     @SerializedName("areaConhecimento")
-    val areaConhecimento: AreaConhecimentoResponse
+    val areaConhecimento: AreaConhecimentoResponse?  // ← era não nullable
 )

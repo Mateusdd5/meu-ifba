@@ -19,7 +19,7 @@ data class UsuarioResponse(
     val fotoPerfil: String?,
 
     @SerializedName("curso")
-    val curso: CursoResponse,
+    val curso: CursoResponse?,  // ← era não nullable
 
     @SerializedName("dataCadastro")
     val dataCadastro: Long,
