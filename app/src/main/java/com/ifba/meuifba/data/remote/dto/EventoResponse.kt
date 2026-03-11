@@ -55,5 +55,8 @@ data class EventoResponse(
     val dataCriacao: Long,
 
     @SerializedName("dataAtualizacao")
-    val dataAtualizacao: Long
+    val dataAtualizacao: Long,
+
+    @SerializedName("imagemBase64")
+    val imagemBase64: String? = null
 )

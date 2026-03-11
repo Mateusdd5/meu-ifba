@@ -40,5 +40,8 @@ data class CreateEventoRequest(
     val numeroVagas: Int,
 
     @SerializedName("usuarioCriadorId")
-    val usuarioCriadorId: Long
+    val usuarioCriadorId: Long,
+
+    @SerializedName("imagemBase64")
+    val imagemBase64: String? = null
 )

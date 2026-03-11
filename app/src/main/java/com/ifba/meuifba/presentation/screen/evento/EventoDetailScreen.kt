@@ -1,5 +1,8 @@
 package com.ifba.meuifba.presentation.screen.evento
 
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -204,12 +209,22 @@ private fun EventoDetailContent(
     evento: EventoModel,
     onMarcacaoToggle: () -> Unit
 ) {
+    // Decodifica imagem Base64 para exibição no header
+    val headerBitmap = remember(evento.imagemPrincipal) {
+        evento.imagemPrincipal?.let {
+            try {
+                val bytes = Base64.decode(it, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) { null }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Header com ícone da categoria
+        // Header — imagem do evento ou ícone da categoria como fallback
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -220,10 +235,19 @@ private fun EventoDetailContent(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = evento.categoria.icone,
-                    fontSize = 80.sp
-                )
+                if (headerBitmap != null) {
+                    Image(
+                        bitmap = headerBitmap,
+                        contentDescription = "Imagem do evento",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = evento.categoria.icone,
+                        fontSize = 80.sp
+                    )
+                }
             }
         }
 

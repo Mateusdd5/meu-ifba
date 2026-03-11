@@ -17,6 +17,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ifba.meuifba.domain.model.EventoModel
 import com.ifba.meuifba.presentation.viewmodel.HomeViewModel
@@ -40,6 +43,18 @@ fun HomeScreen(
 
     val isAuthenticated = viewModel.isAuthenticated()
     val isAdmin = viewModel.isAdmin()
+
+    // Recarrega automaticamente ao voltar para a tela (ex: após deletar evento)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadEventos()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {
@@ -77,6 +92,9 @@ fun HomeScreen(
                     } else {
                         IconButton(onClick = { showSearchBar = true }) {
                             Icon(Icons.Default.Search, "Buscar")
+                        }
+                        IconButton(onClick = viewModel::loadEventos) {
+                            Icon(Icons.Default.Refresh, "Atualizar")
                         }
                         if (isAuthenticated) {
                             if (isAdmin) {

@@ -22,7 +22,8 @@ class UpdateEventoUseCase @Inject constructor(
         cargaHoraria: Int,
         certificacao: Boolean,
         requisitos: String?,
-        numeroVagas: Int
+        numeroVagas: Int,
+        imagemBase64: String? = null
     ): Resource<EventoModel?> {
         val request = UpdateEventoRequest(
             titulo = titulo,
@@ -36,7 +37,8 @@ class UpdateEventoUseCase @Inject constructor(
             cargaHoraria = cargaHoraria,
             certificacao = certificacao,
             requisitos = requisitos,
-            numeroVagas = numeroVagas
+            numeroVagas = numeroVagas,
+            imagemBase64 = imagemBase64
         )
         return eventoRepository.updateEvento(eventoId, request)
     }

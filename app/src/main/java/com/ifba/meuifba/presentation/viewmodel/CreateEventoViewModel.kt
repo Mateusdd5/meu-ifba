@@ -27,7 +27,7 @@ class CreateEventoViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val eventoId: Long? = savedStateHandle.get<Long>("eventoId")
-    val isEditMode: Boolean = eventoId != null  // exposto para a tela
+    val isEditMode: Boolean = eventoId != null
 
     private val _uiState = MutableStateFlow<CreateEventoUiState>(CreateEventoUiState.Idle)
     val uiState: StateFlow<CreateEventoUiState> = _uiState.asStateFlow()
@@ -71,6 +71,9 @@ class CreateEventoViewModel @Inject constructor(
     private val _categoriaSelecionada = MutableStateFlow<CategoriaModel?>(null)
     val categoriaSelecionada: StateFlow<CategoriaModel?> = _categoriaSelecionada.asStateFlow()
 
+    private val _imagemBase64 = MutableStateFlow<String?>(null)
+    val imagemBase64: StateFlow<String?> = _imagemBase64.asStateFlow()
+
     private val usuarioId: Long
         get() = preferencesManager.userId
 
@@ -83,7 +86,6 @@ class CreateEventoViewModel @Inject constructor(
 
     private fun loadCategorias() {
         viewModelScope.launch {
-            // Categorias fixas refletindo o banco de dados
             _categorias.value = listOf(
                 CategoriaModel(id = 1, nome = "Workshop", descricao = "", icone = "", cor = ""),
                 CategoriaModel(id = 2, nome = "Palestra", descricao = "", icone = "", cor = ""),
@@ -111,6 +113,7 @@ class CreateEventoViewModel @Inject constructor(
                 _requisitos.value = evento.requisitos ?: ""
                 _certificacao.value = evento.certificacao
                 _categoriaSelecionada.value = evento.categoria
+                _imagemBase64.value = evento.imagemPrincipal
                 _uiState.value = CreateEventoUiState.Idle
             } else {
                 _uiState.value = CreateEventoUiState.Error("Evento não encontrado")
@@ -130,6 +133,7 @@ class CreateEventoViewModel @Inject constructor(
     fun onRequisitosChange(value: String) { _requisitos.value = value }
     fun onCertificacaoChange(value: Boolean) { _certificacao.value = value }
     fun onCategoriaChange(categoria: CategoriaModel) { _categoriaSelecionada.value = categoria }
+    fun onImagemBase64Change(value: String?) { _imagemBase64.value = value }
 
     fun saveEvento() {
         if (_titulo.value.isBlank()) {
@@ -169,7 +173,8 @@ class CreateEventoViewModel @Inject constructor(
                     cargaHoraria = cargaHorariaInt,
                     certificacao = _certificacao.value,
                     requisitos = _requisitos.value.ifBlank { null },
-                    numeroVagas = numeroVagasInt
+                    numeroVagas = numeroVagasInt,
+                    imagemBase64 = _imagemBase64.value
                 )
             } else {
                 createEventoUseCase(
@@ -185,7 +190,8 @@ class CreateEventoViewModel @Inject constructor(
                     certificacao = _certificacao.value,
                     requisitos = _requisitos.value.ifBlank { null },
                     numeroVagas = numeroVagasInt,
-                    usuarioCriadorId = usuarioId
+                    usuarioCriadorId = usuarioId,
+                    imagemBase64 = _imagemBase64.value
                 )
             }
 

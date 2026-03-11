@@ -1,8 +1,18 @@
 package com.ifba.meuifba.presentation.screen.evento
 
 import android.app.DatePickerDialog
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -11,13 +21,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ifba.meuifba.presentation.viewmodel.CreateEventoUiState
 import com.ifba.meuifba.presentation.viewmodel.CreateEventoViewModel
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,6 +56,7 @@ fun CreateEventoScreen(
     val categorias by viewModel.categorias.collectAsStateWithLifecycle()
     val categoriaSelecionada by viewModel.categoriaSelecionada.collectAsStateWithLifecycle()
     val dataEvento by viewModel.dataEvento.collectAsStateWithLifecycle()
+    val imagemBase64 by viewModel.imagemBase64.collectAsStateWithLifecycle()
 
     var categoriasDropdownExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -49,21 +64,54 @@ fun CreateEventoScreen(
 
     val dataFormatada = dataEvento?.let {
         SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date(it))
-    } ?: ""
+    } ?: "Selecionar data"
 
-    val calendar = Calendar.getInstance()
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val cal = Calendar.getInstance()
-            cal.set(year, month, dayOfMonth, 0, 0, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            viewModel.onDataEventoChange(cal.timeInMillis)
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
+    // Função que abre o DatePicker
+    val abrirDatePicker = {
+        val cal = Calendar.getInstance()
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                cal.set(year, month, day, 0, 0, 0)
+                viewModel.onDataEventoChange(cal.timeInMillis)
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    // Launcher para selecionar imagem da galeria
+    val imagemLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+
+                val resized = resizeBitmap(originalBitmap, 800)
+                val outputStream = ByteArrayOutputStream()
+                resized.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+                val bytes = outputStream.toByteArray()
+                val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
+                viewModel.onImagemBase64Change(base64)
+            } catch (e: Exception) {
+                // Falha silenciosa — mantém imagem anterior
+            }
+        }
+    }
+
+    // Bitmap para preview
+    val previewBitmap = remember(imagemBase64) {
+        imagemBase64?.let {
+            try {
+                val bytes = Base64.decode(it, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) { null }
+        }
+    }
 
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -77,58 +125,127 @@ fun CreateEventoScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(if (viewModel.isEditMode) "Editar Evento" else "Criar Evento")
-                },
+                title = { Text(if (viewModel.isEditMode) "Editar Evento" else "Novo Evento") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Voltar")
                     }
                 }
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
+            // Seletor de imagem
+            Text("Imagem do evento (opcional)", style = MaterialTheme.typography.labelLarge)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .clickable { imagemLauncher.launch("image/*") },
+                contentAlignment = Alignment.Center
+            ) {
+                if (previewBitmap != null) {
+                    Image(
+                        bitmap = previewBitmap,
+                        contentDescription = "Preview da imagem",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        IconButton(
+                            onClick = { viewModel.onImagemBase64Change(null) },
+                            modifier = Modifier.padding(4.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.errorContainer
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remover imagem",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.padding(4.dp).size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.AddPhotoAlternate,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Toque para adicionar imagem",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider()
+
+            // Título
             OutlinedTextField(
                 value = titulo,
                 onValueChange = viewModel::onTituloChange,
                 label = { Text("Título *") },
+                leadingIcon = { Icon(Icons.Default.Title, null) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                enabled = uiState !is CreateEventoUiState.Loading
             )
+
+            // Descrição
             OutlinedTextField(
                 value = descricao,
                 onValueChange = viewModel::onDescricaoChange,
                 label = { Text("Descrição *") },
+                leadingIcon = { Icon(Icons.Default.Description, null) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
-                maxLines = 5
+                maxLines = 5,
+                enabled = uiState !is CreateEventoUiState.Loading
             )
+
+            // Categoria
             ExposedDropdownMenuBox(
                 expanded = categoriasDropdownExpanded,
                 onExpandedChange = { categoriasDropdownExpanded = it }
             ) {
                 OutlinedTextField(
-                    value = categoriaSelecionada?.nome ?: "",
+                    value = categoriaSelecionada?.nome ?: "Selecionar categoria *",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Categoria *") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriasDropdownExpanded)
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
+                    label = { Text("Categoria") },
+                    leadingIcon = { Icon(Icons.Default.Category, null) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriasDropdownExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    enabled = uiState !is CreateEventoUiState.Loading
                 )
                 ExposedDropdownMenu(
                     expanded = categoriasDropdownExpanded,
@@ -145,110 +262,184 @@ fun CreateEventoScreen(
                     }
                 }
             }
-            OutlinedTextField(
-                value = local,
-                onValueChange = viewModel::onLocalChange,
-                label = { Text("Local *") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = dataFormatada,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Data do evento *") },
-                placeholder = { Text("Selecione a data") },
-                trailingIcon = {
-                    IconButton(onClick = { datePickerDialog.show() }) {
-                        Icon(Icons.Default.CalendarMonth, "Selecionar data")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+
+            // Data — Box clicável cobrindo toda a área do campo
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        enabled = uiState !is CreateEventoUiState.Loading,
+                        onClick = abrirDatePicker
+                    )
+            ) {
+                OutlinedTextField(
+                    value = dataFormatada,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Data *") },
+                    leadingIcon = {
+                        Icon(Icons.Default.CalendarToday, null)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false, // desabilitado para não interceptar o clique do Box
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+
+            // Horários
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedTextField(
                     value = horarioInicio,
                     onValueChange = viewModel::onHorarioInicioChange,
                     label = { Text("Início") },
-                    placeholder = { Text("08:00") },
+                    leadingIcon = { Icon(Icons.Default.AccessTime, null) },
                     modifier = Modifier.weight(1f),
-                    singleLine = true
+                    singleLine = true,
+                    placeholder = { Text("08:00") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    enabled = uiState !is CreateEventoUiState.Loading
                 )
                 OutlinedTextField(
                     value = horarioFim,
                     onValueChange = viewModel::onHorarioFimChange,
                     label = { Text("Fim") },
-                    placeholder = { Text("12:00") },
+                    leadingIcon = { Icon(Icons.Default.AccessTime, null) },
                     modifier = Modifier.weight(1f),
-                    singleLine = true
+                    singleLine = true,
+                    placeholder = { Text("18:00") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    enabled = uiState !is CreateEventoUiState.Loading
                 )
             }
+
+            // Local
+            OutlinedTextField(
+                value = local,
+                onValueChange = viewModel::onLocalChange,
+                label = { Text("Local") },
+                leadingIcon = { Icon(Icons.Default.LocationOn, null) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                enabled = uiState !is CreateEventoUiState.Loading
+            )
+
+            // Público-alvo
             OutlinedTextField(
                 value = publicoAlvo,
                 onValueChange = viewModel::onPublicoAlvoChange,
-                label = { Text("Público alvo") },
+                label = { Text("Público-alvo") },
+                leadingIcon = { Icon(Icons.Default.Group, null) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                enabled = uiState !is CreateEventoUiState.Loading
             )
+
+            // Vagas e Carga Horária
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(
-                    value = cargaHoraria,
-                    onValueChange = viewModel::onCargaHorariaChange,
-                    label = { Text("Carga horária (h)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
                 OutlinedTextField(
                     value = numeroVagas,
                     onValueChange = viewModel::onNumeroVagasChange,
-                    label = { Text("Nº de vagas") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text("Vagas") },
+                    leadingIcon = { Icon(Icons.Default.EventSeat, null) },
                     modifier = Modifier.weight(1f),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    enabled = uiState !is CreateEventoUiState.Loading
+                )
+                OutlinedTextField(
+                    value = cargaHoraria,
+                    onValueChange = viewModel::onCargaHorariaChange,
+                    label = { Text("Carga (h)") },
+                    leadingIcon = { Icon(Icons.Default.Schedule, null) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    enabled = uiState !is CreateEventoUiState.Loading
                 )
             }
-            OutlinedTextField(
-                value = requisitos,
-                onValueChange = viewModel::onRequisitosChange,
-                label = { Text("Requisitos") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-                maxLines = 3
-            )
+
+            // Certificação
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Emite certificado")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.EmojiEvents, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Oferece certificação")
+                }
                 Switch(
                     checked = certificacao,
-                    onCheckedChange = viewModel::onCertificacaoChange
+                    onCheckedChange = viewModel::onCertificacaoChange,
+                    enabled = uiState !is CreateEventoUiState.Loading
                 )
             }
+
+            // Requisitos
+            OutlinedTextField(
+                value = requisitos,
+                onValueChange = viewModel::onRequisitosChange,
+                label = { Text("Requisitos (opcional)") },
+                leadingIcon = { Icon(Icons.Default.Checklist, null) },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 4,
+                enabled = uiState !is CreateEventoUiState.Loading
+            )
+
+            // Botão salvar
             Button(
                 onClick = viewModel::saveEvento,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 enabled = uiState !is CreateEventoUiState.Loading
             ) {
                 if (uiState is CreateEventoUiState.Loading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
                     )
                 } else {
-                    Text(if (viewModel.isEditMode) "Salvar alterações" else "Criar evento")
+                    Icon(
+                        imageVector = if (viewModel.isEditMode) Icons.Default.Save else Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (viewModel.isEditMode) "Salvar alterações" else "Criar evento", fontSize = 16.sp)
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+private fun resizeBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {
+    val width = bitmap.width
+    val height = bitmap.height
+    if (width <= maxSize && height <= maxSize) return bitmap
+    val ratio = width.toFloat() / height.toFloat()
+    val newWidth: Int
+    val newHeight: Int
+    if (width > height) {
+        newWidth = maxSize
+        newHeight = (maxSize / ratio).toInt()
+    } else {
+        newHeight = maxSize
+        newWidth = (maxSize * ratio).toInt()
+    }
+    return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
 }

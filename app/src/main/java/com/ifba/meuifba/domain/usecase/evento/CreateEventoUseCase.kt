@@ -22,7 +22,8 @@ class CreateEventoUseCase @Inject constructor(
         certificacao: Boolean,
         requisitos: String?,
         numeroVagas: Int,
-        usuarioCriadorId: Long
+        usuarioCriadorId: Long,
+        imagemBase64: String? = null
     ): Resource<EventoModel?> {
         val request = CreateEventoRequest(
             titulo = titulo,
@@ -37,7 +38,8 @@ class CreateEventoUseCase @Inject constructor(
             certificacao = certificacao,
             requisitos = requisitos,
             numeroVagas = numeroVagas,
-            usuarioCriadorId = usuarioCriadorId
+            usuarioCriadorId = usuarioCriadorId,
+            imagemBase64 = imagemBase64
         )
         return eventoRepository.createEvento(request)
     }

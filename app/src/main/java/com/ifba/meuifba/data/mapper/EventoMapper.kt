@@ -105,7 +105,8 @@ fun EventoResponse.toModel(): EventoModel {
         isLotado = this.vagasDisponiveis == 0,
         vagasPercentual = if (this.numeroVagas > 0) {
             (this.numeroVagas - this.vagasDisponiveis).toFloat() / this.numeroVagas * 100f
-        } else 0f
+        } else 0f,
+        imagemPrincipal = this.imagemBase64
     )
 }
 

@@ -37,5 +37,8 @@ data class UpdateEventoRequest(
     val requisitos: String?,
 
     @SerializedName("numeroVagas")
-    val numeroVagas: Int
+    val numeroVagas: Int,
+
+    @SerializedName("imagemBase64")
+    val imagemBase64: String? = null
 )
